@@ -1,0 +1,128 @@
+game:GetService("StarterGui"):SetCore("SendNotification",{
+                Title = "Credit",
+                Text = "Bohight123",
+                 Duration = 15})
+
+if game:GetService("CoreGui"):FindFirstChild("Emotes") then
+    game:GetService("CoreGui"):FindFirstChild("Emotes"):Destroy()
+end
+
+wait(1)
+
+local tool = Instance.new("Tool")
+tool.Name = "Laser Gun"
+tool.RequiresHandle = true
+
+-- 🔹 Main Gun (Shortened to 1.4 studs)
+local handle = Instance.new("Part")
+handle.Name = "Handle"
+handle.Size = Vector3.new(0.3, 0.3, 1.4)
+handle.Color = Color3.fromRGB(0, 50, 255)
+handle.Material = Enum.Material.Neon
+handle.CanCollide = true
+handle.Parent = tool
+
+-- 🔹 Gun Grip
+local grip = Instance.new("Part")
+grip.Name = "Grip"
+grip.Size = Vector3.new(0.3, 0.8, 0.3)
+grip.Color = Color3.fromRGB(0, 50, 255)
+grip.Material = Enum.Material.Neon
+grip.CanCollide = true
+grip.Parent = tool
+
+-- Attach grip to gun
+local gripWeld = Instance.new("Weld")
+gripWeld.Part0 = handle
+gripWeld.Part1 = grip
+gripWeld.C0 = CFrame.new(0, -0.5, 0.5) * CFrame.Angles(math.rad(-15), 0, 0)
+gripWeld.Parent = grip
+
+-- Attach to player hand
+handle.Anchored = false
+grip.Anchored = false
+
+local weld = Instance.new("Weld")
+weld.Part0 = handle
+weld.Parent = handle
+
+tool.Equipped:Connect(function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local rightHand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+
+    if rightHand then
+        weld.Part1 = rightHand
+        weld.C0 = CFrame.new(0, 0, -0.6) * CFrame.Angles(math.rad(90), 0, 0)
+    end
+end)
+
+-- Laser shooting
+local function shootLaser(startPos, endPos)
+    local beam = Instance.new("Part")
+    beam.Size = Vector3.new(0.1, 0.1, (startPos - endPos).magnitude)
+    beam.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -beam.Size.Z / 2)
+    beam.Material = Enum.Material.Neon
+    beam.Color = Color3.fromRGB(0, 255, 255)
+    beam.Anchored = true
+    beam.CanCollide = false
+    beam.Parent = game.Workspace
+
+    game:GetService("Debris"):AddItem(beam, 0.15)
+end
+
+-- Glow & fade effect
+local function glowEffect(target)
+    local highlight = Instance.new("Highlight")
+    highlight.FillTransparency = 1
+    highlight.OutlineTransparency = 0
+    highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
+    highlight.Parent = target
+
+    for i = 1, 10 do
+        target.Transparency = i * 0.1
+        highlight.OutlineTransparency = i * 0.1
+        wait(0.05)
+    end
+
+    highlight:Destroy()
+    target:Destroy()
+end
+
+-- Delete NPC/dummy
+local function deleteNPC(npc)
+    if npc:IsA("Model") and npc:FindFirstChildOfClass("Humanoid") then
+        for _, obj in pairs(npc:GetDescendants()) do
+            if obj:IsA("Part") then
+                glowEffect(obj)
+            elseif obj:IsA("Script") or obj:IsA("LocalScript") then
+                obj:Destroy()
+            end
+        end
+        wait(0.5)
+        npc:Destroy()
+    end
+end
+
+-- Activate tool (fire laser)
+tool.Activated:Connect(function()
+    local player = game.Players.LocalPlayer
+    local mouse = player:GetMouse()
+
+    if mouse.Hit then
+        local target = mouse.Target
+        local startPos = handle.Position
+        local endPos = mouse.Hit.Position
+
+        shootLaser(startPos, endPos)
+
+        local npc = target and target:FindFirstAncestorOfClass("Model")
+        if npc and npc:FindFirstChildOfClass("Humanoid") then
+            deleteNPC(npc)
+        elseif target then
+            glowEffect(target)
+        end
+    end
+end)
+
+tool.Parent = game.Players.LocalPlayer.Backpack
